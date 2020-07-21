@@ -6,6 +6,10 @@
 
     <properties resource="dbconfig.properties"/>
 
+    <plugins>
+        <plugin interceptor="com.github.pagehelper.PageInterceptor"></plugin>
+    </plugins>
+
     <!-- 配置环境 -->
     <environments default="mysql">
         <environment id="mysql">
