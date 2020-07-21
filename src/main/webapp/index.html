@@ -9,6 +9,67 @@
 </head>
 <body>
 
+<!-- Alert -->
+<div id="myAlert" class="alert alert-warning alert-dismissible fade in hide" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+
+    <strong id="msg"></strong>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="empAddModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">员工添加</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label for="empName_add_input" class="col-sm-2 control-label">EmpName</label>
+                        <div class="col-sm-10">
+                            <input type="text" name="empName" class="form-control" id="empName_add_input" placeholder="empName">
+                            <span class="help-block"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email_add_input" class="col-sm-2 control-label">Email</label>
+                        <div class="col-sm-10">
+                            <input type="text" name="email" class="form-control" id="email_add_input" placeholder="example@gmail.com">
+                            <span class="help-block"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Gender</label>
+                        <div class="col-sm-10">
+                            <label class="radio-inline">
+                                <input type="radio" name="gender" id="gender1_add_input" value="M" checked> 男
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="gender" id="gender2_add_input" value="F"> 女
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email_add_input" class="col-sm-2 control-label">DeptName</label>
+                        <div class="col-sm-10">
+                            <!--部门提交id-->
+                            <select class="form-control" name="dId" id="dept_add_select"></select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="emp_save_btn">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -17,7 +78,7 @@
     </div>
     <div class="row">
         <div class="col-md-4  text-left">
-            <button class="btn btn-primary">新增</button>
+            <button class="btn btn-primary" id="emp_add_modal">新增</button>
             <button class="btn btn-danger">删除</button>
         </div>
     </div>
@@ -51,6 +112,8 @@
 <script type="text/javascript" src="/static/js/jquery-1.12.4.min.js"></script>
 <script type="text/javascript" src="/static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
 <script>
+    let totalRecord=99999;
+
     $(function () {
         to_page(1);
     });
@@ -112,6 +175,7 @@
             "共 "+result.extend.pageInfo.pages+" 页，" +
             "共 "+result.extend.pageInfo.total+" 条记录"
         )
+        totalRecord = result.extend.pageInfo.total;
     }
 
     // 分页条
@@ -172,6 +236,152 @@
         ul.append(nextPageLi).append(lastPageLi);
         var navEle = $("<nav></nav>").append(ul)
         $("#page_nav_area").append(navEle);
+    }
+
+    // 清空旧表单样式
+    function reset_form(ele){
+        $(ele)[0].reset();
+        $(ele).find("*").removeClass("has-error has-success");
+        $(ele).find(".help-block").text("");
+    }
+
+    // 点击新增按钮弹出模态框
+    $("#emp_add_modal").click(function () {
+        // 重置表单(样式及数据)
+        reset_form("#empAddModal form");
+        // 查询部门信息
+        getDepts();
+        $("#empAddModal").modal({
+            backdrop: "static"
+        });
+    })
+
+    // 提交员工信息
+    $("#emp_save_btn").click(function () {
+        var empNameSel = $("#empName_add_input");
+        // 校验数据
+        if (!validate_add_form()){
+            return false;
+        }
+
+        testEmpName();
+
+        // 判断ajax校验结果
+        if (empNameSel.attr("ajax_va")==="false"){
+            show_validate_msg(empNameSel, "error", empNameSel.attr("ajax_va_msg"));
+            // remove
+            empNameSel.removeAttr("ajax_va").removeAttr("ajax_va_msg");
+            return false;
+        }
+
+        $.ajax({
+            url:"/emp",
+            method: "POST",
+            data: $("#empAddModal form").serialize(),
+            success:function (result) {
+                console.log(result)
+                // 关闭模态框
+                $("#empAddModal").modal('hide');
+                // 结果说明
+                showResult(result.code, result);
+                // 来到最后一页
+                to_page(totalRecord);
+            }
+        })
+
+    })
+
+    // ajax 检测用户名是否可用
+    function testEmpName(){
+        var empNameSel = $("#empName_add_input");
+        var empName = empNameSel.val();
+        // 检测用户名是否可用
+        $.ajax({
+            url:"/checkUser",
+            type:"POST",
+            data:"empName="+empName,
+            success:function (result) {
+                console.log(result)
+                if (result.code === 100){
+                    show_validate_msg(empNameSel, "success", "用户名可用");
+                    // 保存状态
+                    empNameSel.attr("ajax_va", true);
+                }else {
+                    show_validate_msg(empNameSel, "error", result.msg);
+                    // 保存状态
+                    empNameSel.attr("ajax_va", false);
+                    empNameSel.attr("ajax_va_msg", result.msg)
+                }
+            }
+        })
+    }
+
+    // 检测用户名是否可用
+    $("#empName_add_input").change(function () {
+        testEmpName();
+    })
+
+    function validate_add_form() {
+        var nameIpt = $("#empName_add_input");
+        var emailIpt = $("#email_add_input");
+        // 拿到校验数据
+        var empName = nameIpt.val();
+        var regName = /(^[a-zA-Z0-9_-]{6,16}$)|(^[\u2E80-\u9FFF]{2,5})/;
+        if (!regName.test(empName)){
+            show_validate_msg(nameIpt, "error", "用户名可以是2-5位中文，或6-16位英文");
+            return false;
+        }else {
+            show_validate_msg(nameIpt, "success", "");
+        }
+
+        var email = emailIpt.val();
+        var regEmail = /^([\w-_]+(?:\.[\w-_]+)*)@((?:[a-z0-9]+(?:-[a-zA-Z0-9]+)*)+\.[a-z]{2,6})$/i;
+        if (!regEmail.test(email)){
+            show_validate_msg(emailIpt, "error", "邮箱格式不正确");
+            return false;
+        }else {
+            show_validate_msg(emailIpt, "success", "");
+        }
+        return true;
+    }
+    
+    function show_validate_msg(ele, status, msg) {
+        // 清楚当前元素状态
+        ele.parent().removeClass("has-success has-error");
+        if ("success" === status){
+            ele.parent().addClass("has-success");
+            ele.next("span").text(msg);
+        }else if ("error" === status){
+            ele.parent().addClass("has-error");
+            ele.next("span").text(msg);
+        }
+    }
+
+    function getDepts() {
+        $.ajax({
+            url:"/depts",
+            type:"GET",
+            success:function (result) {
+                // console.log(result);
+
+                $("#dept_add_select").empty();
+                $(result.extend.depts).each(function (index, item) {
+                    $("#dept_add_select").append($("<option></option>")
+                                                .attr("value", item.deptId)
+                                                .append(item.deptName));
+                })
+            }
+        })
+    }
+
+    function showResult(code, result) {
+        if (code === 100){
+            $("#myAlert").attr("class", "alert alert-warning alert-dismissible fade in");
+            $("#msg").empty().append("添加成功！");
+        }else {
+            $("#myAlert").attr("class", "alert alert-danger alert-dismissible fade in");
+            $("#msg").empty().append("添加失败 :"+result.extend.errorFileds.empName);
+        }
     }
 </script>
 </body>

@@ -15,6 +15,15 @@ public class Msg {
 
     private Map<String, Object> extend = new HashMap<>();
 
+    public Msg() {
+    }
+
+    public Msg(int code, String msg, Map<String, Object> extend) {
+        this.code = code;
+        this.msg = msg;
+        this.extend = extend;
+    }
+
     public static Msg success(){
         Msg msg = new Msg();
         msg.setCode(MsgEnum.OK.getCode());
