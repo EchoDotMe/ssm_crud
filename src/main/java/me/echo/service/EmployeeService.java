@@ -50,7 +50,28 @@ public class EmployeeService {
         return employeeMapper.selectByPrimaryKeyWithDept(id);
     }
 
+    /**
+     * 更新用户信息
+     */
     public void updateEmp(Employee employee){
         employeeMapper.updateByPrimaryKeySelective(employee);
+    }
+
+    /**
+     * 删除单个用户信息
+     */
+    public void deleteEmp(Integer id){
+        employeeMapper.deleteByPrimaryKey(id);
+    }
+
+    /**
+     * 批量删除用户
+     * @param ids 包含用户id的整型数组 : [1, 2, 3]
+     */
+    public void deleteBatch(List<Integer> ids){
+        EmployeeExample example = new EmployeeExample();
+        EmployeeExample.Criteria criteria = example.createCriteria();
+        criteria.andEmpIdIn(ids);
+        employeeMapper.deleteByExample(example);
     }
 }
