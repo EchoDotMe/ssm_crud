@@ -3,6 +3,7 @@ package me.echo.service;
 import me.echo.bean.Employee;
 import me.echo.bean.EmployeeExample;
 import me.echo.dao.EmployeeMapper;
+import org.apache.taglibs.standard.lang.jstl.EmptyOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,5 +41,16 @@ public class EmployeeService {
         criteria.andEmpNameEqualTo(empName);
         long countByExample = employeeMapper.countByExample(employeeExample);
         return countByExample == 0;
+    }
+
+    /**
+     * 根据id获取员工信息
+     */
+    public Employee getEmp(Integer id){
+        return employeeMapper.selectByPrimaryKeyWithDept(id);
+    }
+
+    public void updateEmp(Employee employee){
+        employeeMapper.updateByPrimaryKeySelective(employee);
     }
 }

@@ -10,10 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.HashMap;
@@ -28,6 +25,45 @@ public class EmployeeController {
 
     @Autowired
     private EmployeeService employeeService;
+
+    /**
+     * 查询员工信息
+     * @param id 员工id
+     */
+    @ResponseBody
+    @GetMapping("/emp/{id}")
+    public Msg getEmp(@PathVariable Integer id){
+
+       Employee employee = employeeService.getEmp(id);
+       if (employee == null){
+           return Msg.fail().add("reason", "查无此人!");
+       }
+        return Msg.success().add("emp", employee);
+    }
+
+    /**
+     * 更新员工信息
+     * @param employee 前端传来的employee
+     * @return  操作结果消息
+     *
+     * 前端ajax直接 method:"PUT" 会报错
+     * Employee{empId=8, empName='null', gender='null', email='null', dId=null, department=null}
+     * Tomcat 默认只对POST请求封装对象，所以除路径变量外，其余的属性全部为空引发sql异常
+     *
+     * Spring mvc 提供了解决方案：org.springframework.web.filter.HttpPutFormContentFilter
+     * 配置HttpPutFormContentFilter过滤器即可
+     * 作用：
+     *  将请求体中的数据解析包装成一个map，request被重新包装，重写了request.getParameter()方法，就会从自己封装的map中取数据
+     *
+     */
+    @ResponseBody
+    @PutMapping("/emp/{empId}")
+    public Msg updateEmp(Employee employee){
+        // 校验数据
+        System.out.println(employee);
+        employeeService.updateEmp(employee);
+        return Msg.success();
+    }
 
     /**
      * 员工保存
@@ -76,7 +112,7 @@ public class EmployeeController {
     @RequestMapping("/emps")
     @ResponseBody
     public Msg getEmpsWithJson(@RequestParam(value = "pn", defaultValue = "1") Integer pn, Model model){
-        PageHelper.startPage(pn, 5);
+        PageHelper.startPage(pn, 10);
         // startPage后面这个查询就是一个分页查询
         List<Employee> emps = employeeService.getAll();
         // 使用PageInfo包装查询后的结果，其中封装了详细信息, 传入连续显示的页数
