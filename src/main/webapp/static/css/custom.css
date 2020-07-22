@@ -6,3 +6,7 @@
 table, th{
     text-align: center;
 }
+
+p{
+    word-break: break-word;
+}
